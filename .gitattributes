@@ -1,0 +1,6 @@
+* text=auto eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+# 参赛声明必须与官方文件字节一致，禁止任何换行符转换
+CONTEST_DECLARATION.md -text
