@@ -1,0 +1,22 @@
+# 忽略本地会话与临时文件
+.workbuddy/
+.tmp_official/
+
+# 凭证：任何情况下都不得提交
+mcp.json
+.env
+.env.*
+!.env.example
+*token*.txt
+*secret*
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+venv/
+.venv/
+
+# 系统文件
+.DS_Store
+Thumbs.db
