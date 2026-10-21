@@ -76,18 +76,91 @@
 
 ## 📦 安装
 
-### 方式一：装进 WorkBuddy（推荐）
+> 完整版（8 个客户端的配置片段、AI 代配指令、故障排查表）：**[docs/INSTALL.md](docs/INSTALL.md)**
 
-1. 申请麦当劳 MCP Token（活动官方渠道发放）
-2. 打开 WorkBuddy → 左侧边栏【专家·技能·连接器】→【连接器】
-3. 右上角【自定义连接器】→【配置 MCP】，填入 `mcp-config.example.json` 的内容，把 `${MCD_MCP_TOKEN}` 换成真实 Token
-4. 把本仓库的 `SKILL.md` 和 `references/` 一起放到 `~/.workbuddy/skills/mcd-coupon-helper/`
-   - Windows：`C:\Users\<你>\.workbuddy\skills\mcd-coupon-helper\`
-5. 对话里说「麦当劳领券」或「我的积分」即可触发
+### 第 0 步：申请一个 MCP Token（必做）
 
-> 🔒 Token 与你的麦当劳会员账号绑定，属于敏感凭证。本仓库只提供环境变量占位符，不含任何真实 Token。
+Token 与你的麦当劳会员账号绑定，领券、查积分、算价都靠它识别你是谁。
 
-### 方式二：只用解析器（不装 WorkBuddy）
+1. 打开 **https://open.mcd.cn/mcp**
+2. 右上角【登录】→ 用**手机号 + 验证码**登录（就是你的麦当劳账号）
+3. 登录后右上角变成【控制台】→ 点开 → 点**【激活】**
+4. 阅读并同意服务协议 → Token 生成，点**一键复制**
+
+> 🔒 Token 等同账号凭证：**不要提交到 GitHub、不要发在群里**。本仓库只提供 `${MCD_MCP_TOKEN}` 占位符。
+> 官方图文指南：[M-China/mcd-mcp-server](https://github.com/M-China/mcd-mcp-server)
+
+### 第 1 步：接到你的 AI 客户端（任选一个）
+
+服务端就三个值，所有客户端通用：
+
+| 项 | 值 |
+|---|---|
+| 接入地址 | `https://mcp.mcd.cn` |
+| 传输协议 | **Streamable HTTP** |
+| 鉴权头 | `Authorization: Bearer <你的 Token>` |
+
+**WorkBuddy**：左侧【专家·技能·连接器】→【连接器】→ 右上【自定义连接器】→【配置 MCP】→ 粘贴 `mcp-config.example.json` 的内容（换成真实 Token）→ 保存 → **启用**。
+
+**其他客户端**一句话：把上面三个值填进对应的配置位置。
+
+| 客户端 | 配置放哪里 |
+|---|---|
+| Claude Code | `.mcp.json`，或 `claude mcp add --transport http` |
+| Codex CLI | `~/.codex/config.toml` → `[mcp_servers.mcd-mcp]` + `bearer_token_env_var` |
+| Cursor | 设置 → Tools & MCP → Add Custom MCP |
+| Trae | 设置 → MCP → 手动添加（记得切到 `Builder with MCP` 模式） |
+| Qoder | 设置 → MCP → + Add（**不要写 `type` 字段**，写了反而不识别） |
+| VSCode | `.vscode/mcp.json`（用 `inputs` 存 Token 更安全） |
+| Cherry Studio | 设置 → MCP → 从 JSON 导入 |
+
+→ 每个客户端的**完整配置片段**见 [docs/INSTALL.md](docs/INSTALL.md#第-1-步把-mcp-接到你的-ai-客户端)
+
+### 第 2 步：装上 Skill（可选，但强烈建议）
+
+**接 MCP = 让 AI 有手；装 Skill = 给它一本操作手册。**
+
+不装也能用，但 AI 可能跳过「领券后核对到账」这一步——而实测中正是因为这一步，才发现「领 3 张只到账 2 张」。
+
+**WorkBuddy 用户**，把 `SKILL.md` 和 `references/` 一起复制到：
+
+```
+Windows:      C:\Users\<你>\.workbuddy\skills\mcd-coupon-helper\
+macOS/Linux:  ~/.workbuddy/skills/mcd-coupon-helper/
+```
+
+**Claude Code 用户**，放 `.claude/skills/mcd-coupon-helper/` 即可，用的是同一套 `SKILL.md` 约定。
+
+**其他客户端**没有 Skill 目录，最省事的办法是让 AI 自己读：
+
+```
+先读这两个文件当作你的操作手册，然后按里面的流程帮我做事：
+https://github.com/zxyyxzzxy/mcd-coupon-helper/blob/main/SKILL.md
+https://github.com/zxyyxzzxy/mcd-coupon-helper/tree/main/references
+
+读完先告诉我：领券之后必须做哪一步核对？
+```
+
+最后那句反问是关键——它在检验 AI 到底有没有真的读到「双向核对」这条铁律。
+
+### 🤖 不想手动配？让 AI 来配
+
+把这段直接丢给 AI，它会帮你写好配置文件：
+
+```
+帮我配置麦当劳 MCP：
+- 名称 mcd-mcp，地址 https://mcp.mcd.cn，传输 Streamable HTTP
+- 鉴权头 Authorization: Bearer <我的 token>
+- 先确认当前客户端类型和配置文件位置，不要猜
+- 优先用环境变量 MCD_MCP_TOKEN 承载 token，不要明文写进会被提交的文件
+- 已有配置追加，不要覆盖我其他的 MCP
+- 配完调用 now-time-info 验证，把返回的时间给我看
+我的 token：______
+```
+
+→ 完整版（含 WorkBuddy 专用指令、明文 vs 环境变量的风险对比）见 [docs/INSTALL.md](docs/INSTALL.md#不想手动配让-ai-帮你配)
+
+### 只用解析器（不接 MCP）
 
 券包接口返回的是 Markdown 文本，`scripts/parse_coupons.py` 可以把它变成结构化 JSON：
 
@@ -152,6 +225,7 @@ mcd-coupon-helper/
 ├── tests/test_parse_coupons.py   # 19 个单元测试
 ├── fixtures/coupons_sample.md    # 真实返回样本（已脱敏）
 ├── assets/demo.png               # README 配图
+├── docs/INSTALL.md               # 安装与接入指南（8 个客户端 + AI 代配 + 排错）
 ├── MCP_INTEGRATION.md            # 用了哪些 MCP Tool、调用流程、业务价值
 ├── mcp-config.example.json       # 脱敏配置示例
 ├── CONTEST_DECLARATION.md        # 参赛声明（官方原文，未作任何改动）
